@@ -7,10 +7,11 @@ services:
       - ./master/mysql_master.env
     container_name: "mysql_master"
     restart: "no"
+    user: "mysql"
     ports:
       - 3306:3306
     volumes:
-      - ./master/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+      - ./master/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf:ro
       - ./master/data:/var/lib/mysql
 
   mysql_slave1:
@@ -19,12 +20,13 @@ services:
       - ./slave1/mysql_slave.env
     container_name: "mysql_slave1"
     restart: "no"
+    user: "mysql"
     ports:
       - 3307:3306
     depends_on:
       - mysql_master
     volumes:
-      - ./slave1/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+      - ./slave1/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf:ro
       - ./slave1/data:/var/lib/mysql
 
   mysql_slave2:
@@ -33,11 +35,12 @@ services:
       - ./slave2/mysql_slave.env
     container_name: "mysql_slave2"
     restart: "no"
+    user: "mysql"
     ports:
       - 3308:3306
     depends_on:
       - mysql_master
     volumes:
-      - ./slave2/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+      - ./slave2/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf:ro
       - ./slave2/data:/var/lib/mysql
 
