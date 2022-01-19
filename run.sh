@@ -6,13 +6,28 @@ chmod 0444 ./slave2/conf/*
 
 docker-compose up --build -d
 
-echo "Waiting for containers to spin up"
-sleep 20
+until docker exec mysql_master sh -c 'export MYSQL_PWD=111; mysql -u root -e ";"'
+do
+    echo "Waiting for mysql_master database connection..."
+    sleep 4
+done
 
 priv_stmt='GRANT REPLICATION SLAVE ON *.* TO "mydb_slave_user"@"%" IDENTIFIED BY "mydb_slave_pwd"; FLUSH PRIVILEGES;'
 docker exec mysql_master sh -c "export MYSQL_PWD=111; mysql -u root -e '$priv_stmt'"
 
 echo "Enabled replication on master node"
+
+until docker-compose exec mysql_slave1 sh -c 'export MYSQL_PWD=111; mysql -u root -e ";"'
+do
+    echo "Waiting for mysql_slave1 database connection..."
+    sleep 4
+done
+
+until docker-compose exec mysql_slave2 sh -c 'export MYSQL_PWD=111; mysql -u root -e ";"'
+do
+    echo "Waiting for mysql_slave2 database connection..."
+    sleep 4
+done
 
 docker-ip() {
     docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$@"
@@ -34,3 +49,14 @@ docker exec mysql_slave1 sh -c "export MYSQL_PWD=111; mysql -u root -e 'SHOW SLA
 
 docker exec mysql_slave2 sh -c "$start_slave_cmd"
 docker exec mysql_slave2 sh -c "export MYSQL_PWD=111; mysql -u root -e 'SHOW SLAVE STATUS \G'"
+
+create_table_stmt='USE mydb; CREATE TABLE users (id INTEGER(11) UNSIGNED AUTO_INCREMENT NOT NULL,name VARCHAR(255),PRIMARY KEY (id));'
+docker exec mysql_master sh -c "export MYSQL_PWD=111; mysql -u root -e '$create_table_stmt'"
+
+insert_data_stmt='INSERT INTO mydb.users (name) VALUES ("name");'
+
+while :
+do
+  docker exec mysql_master sh -c "export MYSQL_PWD=111; mysql -u root -e '$insert_data_stmt'"
+  sleep 10
+done
